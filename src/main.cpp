@@ -22,6 +22,7 @@ int a0_buf[S_READ_BUF];
 int a1_buf[S_READ_BUF];
 int a2_buf[S_READ_BUF];
 int normalized_reading = 0;
+int last_moisture_value = 0;
 int moisture_value = 0;
 
 // define functions
@@ -41,14 +42,16 @@ void setup() {
     Serial.println("IS31 not found");
     while (1);
   }
+
+  // begin display
+  update_display(0);
 }
 
 void loop() {
   // if we're not in debug mode, sleep for duty cycle reasons
   if (DEBUG) {delay(DEBUG_SLEEP);}
   else {delay(OP_SLEEP);}
-  // Serial.println("Waking from sleep ...");
-  
+
   // get measurements (Sensor Data Extraction)
   read_data();
   
@@ -59,12 +62,16 @@ void loop() {
   
   // normalize measurements (Preprocessing)
   normalize_data();
+
   
   // convert measurements to percentage moisture (Feature Extraction / Classification)
   reading_to_value();
   
   // update display (Meaningful Output)
-  update_display(moisture_value);
+  if (abs(last_moisture_value - moisture_value) > 10)
+  {
+    update_display(moisture_value);
+  }
 }
 
 
@@ -117,6 +124,8 @@ void normalize_data()
 
 void reading_to_value()
 {
+  // update the cached value
+  last_moisture_value = moisture_value;
   // Now we must convert the reading we have gotten into a usable moisture value
   // we know the sensors are bounded by our ground truths for air and water
   // so let's convert this to a value between 0 and 100 based on those bounds
